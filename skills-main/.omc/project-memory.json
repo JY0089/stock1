@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1772667238316,
+  "projectRoot": "C:\\Users\\ahnju\\OneDrive\\바탕 화면\\Antigravity\\skills-main",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "skills-main": {
+      "path": "skills-main",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1772667238253,
+      "keyFiles": [
+        "README.md",
+        "THIRD_PARTY_NOTICES.md"
+      ]
+    },
+    "skills-main\\spec": {
+      "path": "skills-main\\spec",
+      "purpose": "Test specifications",
+      "fileCount": 1,
+      "lastAccessed": 1772667238255,
+      "keyFiles": [
+        "agent-skills-spec.md"
+      ]
+    }
+  },
+  "hotPaths": [],
+  "userDirectives": []
+}

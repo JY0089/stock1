@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공인중개사 AI 학습 도우미 | NotebookLM × Gemini</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0f1a;
+      --surface: #161829;
+      --surface2: #1e2138;
+      --border: rgba(255,255,255,0.08);
+      --accent: #6c63ff;
+      --accent2: #4ecdc4;
+      --accent-glow: rgba(108,99,255,0.35);
+      --text: #e8eaf6;
+      --text-muted: #8b8fa8;
+      --user-bubble: linear-gradient(135deg,#6c63ff,#4ecdc4);
+      --ai-bubble: #1e2138;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: rgba(22,24,41,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--user-bubble);
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 18px;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .logo-text h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo-text span { font-size: 11px; color: var(--text-muted); }
+    .badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.4);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── API KEY BAR ── */
+    #api-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 24px;
+      background: rgba(30,33,56,0.7);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #api-bar label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    #apiKeyInput {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: monospace;
+      outline: none;
+      transition: border 0.2s;
+    }
+    #apiKeyInput:focus { border-color: var(--accent); }
+    #saveApiBtn {
+      padding: 7px 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #saveApiBtn:hover { opacity: 0.85; }
+    #apiStatus { font-size: 11px; color: var(--accent2); white-space: nowrap; }
+
+    /* ── SUBJECT CHIPS ── */
+    #chips {
+      display: flex;
+      gap: 8px;
+      padding: 10px 24px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      scrollbar-width: none;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    #chips::-webkit-scrollbar { display: none; }
+    .chip {
+      white-space: nowrap;
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .chip:hover, .chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(108,99,255,0.12);
+    }
+
+    /* ── MESSAGES ── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--surface2) transparent;
+    }
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+
+    /* Welcome card */
+    .welcome {
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.85;
+    }
+    .welcome .w-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 20px var(--accent-glow));
+    }
+    .welcome h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .welcome p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+    .example-qs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .example-q {
+      padding: 8px 14px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .example-q:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      background: rgba(78,205,196,0.08);
+    }
+
+    /* Message rows */
+    .row { display: flex; gap: 12px; align-items: flex-start; }
+    .row.user { flex-direction: row-reverse; }
+    .avatar {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .avatar.ai { background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.3); }
+    .avatar.user { background: var(--user-bubble); box-shadow: 0 0 12px var(--accent-glow); }
+    .bubble {
+      max-width: 72%;
+      padding: 13px 17px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.7;
+      word-break: keep-all;
+    }
+    .bubble.ai {
+      background: var(--ai-bubble);
+      border: 1px solid var(--border);
+      border-top-left-radius: 4px;
+    }
+    .bubble.user {
+      background: var(--user-bubble);
+      border-top-right-radius: 4px;
+      color: #fff;
+    }
+    /* Markdown-like rendering */
+    .bubble.ai strong { color: var(--accent2); }
+    .bubble.ai code {
+      background: rgba(255,255,255,0.07);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    .bubble.ai ul, .bubble.ai ol { padding-left: 18px; }
+    .bubble.ai li { margin: 4px 0; }
+    .bubble.ai h3, .bubble.ai h4 {
+      color: var(--accent);
+      margin: 10px 0 4px;
+      font-size: 14px;
+    }
+    .meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent2); }
+    .thinking-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--accent);
+      background: rgba(108,99,255,0.1);
+      border: 1px solid rgba(108,99,255,0.25);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .thinking-badge .dot-pulse { animation: pulse 1.2s infinite; }
+
+    /* Typing indicator */
+    .typing { display: flex; gap: 5px; align-items: center; padding: 10px 4px; }
+    .typing span {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+    /* ── INPUT BAR ── */
+    #input-bar {
+      padding: 16px 24px;
+      background: rgba(22,24,41,0.9);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .input-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px 14px;
+      transition: border 0.2s;
+    }
+    .input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    #userInput {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Pretendard', sans-serif;
+      resize: none;
+      max-height: 120px;
+      line-height: 1.5;
+    }
+    #userInput::placeholder { color: var(--text-muted); }
+    #sendBtn {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--user-bubble);
+      border: none;
+      cursor: pointer;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    #sendBtn:hover { opacity: 0.85; transform: scale(1.05); }
+    #sendBtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    #sendBtn svg { width: 18px; height: 18px; fill: white; }
+    .hint { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏠</div>
+    <div class="logo-text">
+      <h1>공인중개사 AI 학습 도우미</h1>
+      <span>NotebookLM × Gemini 2.5 Flash</span>
+    </div>
+  </div>
+  <span class="badge">⚡ Thinking + Search</span>
+</header>
+
+<!-- API KEY BAR -->
+<div id="api-bar">
+  <label>🔑 Gemini API Key</label>
+  <input type="password" id="apiKeyInput" placeholder="AIzaSy..." />
+  <button id="saveApiBtn">저장</button>
+  <span id="apiStatus"></span>
+</div>
+
+<!-- SUBJECT CHIPS -->
+<div id="chips">
+  <div class="chip active" data-subject="전체">📚 전체</div>
+  <div class="chip" data-subject="부동산학개론">📊 부동산학개론</div>
+  <div class="chip" data-subject="민법">⚖️ 민법</div>
+  <div class="chip" data-subject="공인중개사법">📋 공인중개사법</div>
+  <div class="chip" data-subject="부동산공법">🏗️ 부동산공법</div>
+  <div class="chip" data-subject="공시법">📜 공시법</div>
+  <div class="chip" data-subject="세법">💰 세법</div>
+</div>
+
+<!-- MESSAGES -->
+<div id="messages">
+  <div class="welcome" id="welcome">
+    <div class="w-icon">🎓</div>
+    <h2>공인중개사 동차 합격을 도와드립니다</h2>
+    <p>NotebookLM 학습 자료 + Gemini AI 추론 + Google 실시간 검색<br />세 가지 힘을 결합한 AI 학습 도우미입니다.</p>
+    <div class="example-qs">
+      <div class="example-q">점유권과 소유권의 차이는?</div>
+      <div class="example-q">취득세 비과세 요건</div>
+      <div class="example-q">NPV 계산 방법 알려줘</div>
+      <div class="example-q">국토계획법 용도지역 종류</div>
+      <div class="example-q">중개보수 계산 방법</div>
+      <div class="example-q">저당권과 전세권 비교</div>
+    </div>
+  </div>
+</div>
+
+<!-- INPUT BAR -->
+<div id="input-bar">
+  <div class="input-wrap">
+    <textarea id="userInput" rows="1" placeholder="공인중개사 시험 관련 질문을 입력하세요... (Shift+Enter: 줄바꿈)"></textarea>
+    <button id="sendBtn" title="전송">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+  <div class="hint">Powered by Gemini 2.5 Flash · Thinking HIGH · Google Search</div>
+</div>
+
+<script type="module">
+  import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+  // ── State ──
+  let apiKey = localStorage.getItem("gemini_api_key") || "";
+  let activeSubject = "전체";
+  let isGenerating = false;
+  let chatHistory = [];
+
+  // ── NotebookLM 핵심 컨텍스트 (공인중개사 학습 자료 기반) ──
+  const NOTEBOOKLM_CONTEXT = `
+당신은 공인중개사 자격증 시험을 위한 전문 AI 학습 도우미입니다.
+아래는 사용자의 NotebookLM에서 추출한 공인중개사 시험 핵심 학습 자료입니다.
+
+=== 📚 공인중개사 시험 핵심 요약 (NotebookLM 기반) ===
+
+【1차 시험】
+
+▶ 부동산학개론 핵심 포인트:
+- 수요·공급의 탄력성 계산 (매년 9~10문항 계산 문제 출제)
+- 포트폴리오 이론: 체계적 위험(제거불가) vs 비체계적 위험(분산투자로 제거)
+  · 상관계수 -1: 위험분산 최대 / +1: 분산 효과 없음
+- 투자론: NPV, IRR, 현금흐름 분석, LTV·DTI 대출한도
+- 금융론: 원리금균등상환, 원금균등상환, 체증식 상환 방식
+- 감정평가론: 비교방식, 원가방식, 수익방식 (3방식)
+- 임대료 규제: 규제임대료 > 시장임대료 → 시장 영향 없음
+  · 규제임대료 < 시장임대료 → 초과수요, 임대주택 부족 발생
+- 부동산 경기변동론과 입지계수
+
+▶ 민법 및 민사특별법 핵심 포인트:
+- 판례 기반 사례문제 80% 이상 (조문 문제는 15% 미만)
+- 물권법 35%: 물권변동, 점유권, 소유권, 지상권, 지역권, 전세권, 담보물권(저당권·유치권·질권)
+- 계약법 25%: 매매, 교환, 임대차 (이행지체·이행불능·담보책임)
+- 민법총칙: 법률행위 효력요건, 의사표시 하자, 무효·취소·철회
+- 혼동의 법칙: 채권자·채무자 동일인 → 채권 소멸 (예외: 제3자 이익)
+- 민사특별법: 주택임대차보호법, 상가건물임대차보호법, 가등기담보법 등
+
+【2차 시험】
+
+▶ 공인중개사법령 및 중개실무 핵심 포인트 (전략 과목):
+- "하여야 한다"(의무) vs "할 수 있다"(임의) 구분 필수
+- 중개사무소 개설등록 요건 및 결격사유
+- 금지행위: 쌍방대리, 초과보수 수령, 부정한 방법으로 의뢰인 유인 등
+- 중개보수 계산: 거래금액 × 요율 (한도액 이하)
+- 손해배상책임과 공제사업
+- 부동산거래신고 기한·방법
+- 주택임대차보호법: 대항력(전입신고+인도), 우선변제권, 최우선변제
+
+▶ 부동산공법 핵심 포인트:
+- 국토의 계획 및 이용에 관한 법률 (12문항): 용도지역·지구·구역, 개발행위허가
+- 도시개발법: 환지방식, 수용방식, 혼용방식
+- 도시 및 주거환경정비법: 재개발·재건축 조합설립 요건
+- 건축법: 건폐율, 용적률, 허가·신고 구분
+- 주택법: 사업승인, 분양가상한제
+- 농지법: 농지취득자격증명, 농업진흥지역
+
+▶ 부동산공시법 핵심 포인트:
+- 지적법: 지적공부 종류(토지대장·지적도 등), 토지의 이동(합병·분할·등록전환)
+- 등기법: 등기의 종류(본등기·가등기), 등기 절차(신청·촉탁)
+- 표시에 관한 등기 vs 권리에 관한 등기
+- 각종 권리 등기: 소유권, 저당권, 전세권 등기 절차
+
+▶ 부동산세법 핵심 포인트:
+- 취득세: 과세표준, 세율, 취득의 종류 (유상·무상·원시취득)
+- 재산세: 납세의무자, 과세기준일 (6월 1일)
+- 종합부동산세: 공제금액, 세율, 1세대 1주택 특례
+- 양도소득세: 비과세 요건(1세대 1주택 2년 보유/거주), 장기보유특별공제
+- 취득세·등록면허세 납부 기한 및 절차
+
+=== 학습 전략 ===
+- 최근 8년간 단순암기 → 사례·응용 문제 중심으로 변화
+- CBT 전자문제집 활용: 100분 실전 시뮬레이션
+- 기출 3단계: 1)이론병행 → 2)유형분석 → 3)실전반복
+
+이 자료를 바탕으로 사용자의 질문에 정확하고 상세하게 답변하세요.
+Google Search 도구를 활용해 최신 법령 개정 사항도 확인하세요.
+답변은 한국어로 하고, 핵심 내용은 **굵게**, 중요 수치는 명확히 표시하세요.
+  `.trim();
+
+  // ── DOM ──
+  const messagesEl = document.getElementById("messages");
+  const userInputEl = document.getElementById("userInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const apiKeyInput = document.getElementById("apiKeyInput");
+  const saveApiBtn = document.getElementById("saveApiBtn");
+  const apiStatus = document.getElementById("apiStatus");
+  const chips = document.querySelectorAll(".chip");
+  const exampleQs = document.querySelectorAll(".example-q");
+  const welcomeEl = document.getElementById("welcome");
+
+  // ── Init ──
+  if (apiKey) {
+    apiKeyInput.value = apiKey;
+    apiStatus.textContent = "✓ 저장됨";
+  }
+
+  // ── API Key ──
+  saveApiBtn.addEventListener("click", () => {
+    const val = apiKeyInput.value.trim();
+    if (!val.startsWith("AIza")) {
+      apiStatus.style.color = "#ff6b6b";
+      apiStatus.textContent = "⚠ 올바른 키를 입력하세요";
+      return;
+    }
+    apiKey = val;
+    localStorage.setItem("gemini_api_key", val);
+    apiStatus.style.color = "#4ecdc4";
+    apiStatus.textContent = "✓ 저장됨";
+  });
+
+  // ── Chips ──
+  chips.forEach(chip => {
+    chip.addEventListener("click", () => {
+      chips.forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeSubject = chip.dataset.subject;
+    });
+  });
+
+  // ── Example Questions ──
+  exampleQs.forEach(q => {
+    q.addEventListener("click", () => {
+      userInputEl.value = q.textContent;
+      autoResize();
+      sendMessage();
+    });
+  });
+
+  // ── Textarea auto-resize ──
+  function autoResize() {
+    userInputEl.style.height = "auto";
+    userInputEl.style.height = Math.min(userInputEl.scrollHeight, 120) + "px";
+  }
+  userInputEl.addEventListener("input", autoResize);
+  userInputEl.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  sendBtn.addEventListener("click", sendMessage);
+
+  // ── Render markdown-like text ──
+  function renderMarkdown(text) {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/`(.+?)`/g, "<code>$1</code>")
+      .replace(/^### (.+)$/gm, "<h4>$1</h4>")
+      .replace(/^## (.+)$/gm, "<h3>$1</h3>")
+      .replace(/^- (.+)$/gm, "<li>$1</li>")
+      .replace(/(<li>.*<\/li>)/gs, "<ul>$1</ul>")
+      .replace(/\n\n/g, "<br /><br />")
+      .replace(/\n/g, "<br />");
+  }
+
+  // ── Add message row ──
+  function addRow(role, html = "", streaming = false) {
+    welcomeEl && (welcomeEl.style.display = "none");
+
+    const row = document.createElement("div");
+    row.className = `row ${role}`;
+    const avatar = document.createElement("div");
+    avatar.className = `avatar ${role}`;
+    avatar.textContent = role === "user" ? "👤" : "🤖";
+    const bubble = document.createElement("div");
+    bubble.className = `bubble ${role}`;
+    if (streaming) {
+      bubble.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+    } else {
+      bubble.innerHTML = html;
+    }
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    messagesEl.appendChild(row);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
+  }
+
+  // ── Send Message ──
+  async function sendMessage() {
+    const text = userInputEl.value.trim();
+    if (!text || isGenerating) return;
+    if (!apiKey) {
+      alert("먼저 Gemini API 키를 입력하고 저장해주세요!");
+      apiKeyInput.focus();
+      return;
+    }
+
+    isGenerating = true;
+    sendBtn.disabled = true;
+    userInputEl.value = "";
+    userInputEl.style.height = "auto";
+
+    // User bubble
+    addRow("user", text);
+
+    // Subject prefix
+    const subjectPrefix = activeSubject !== "전체"
+      ? `[${activeSubject} 과목 관련 질문] `
+      : "";
+    const fullQuestion = subjectPrefix + text;
+
+    // AI bubble with typing indicator
+    const aiBubble = addRow("ai", "", true);
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash-preview-04-17",
+        systemInstruction: NOTEBOOKLM_CONTEXT,
+      });
+
+      // Add to history
+      chatHistory.push({ role: "user", parts: [{ text: fullQuestion }] });
+
+      const chat = model.startChat({ history: chatHistory.slice(0, -1) });
+      const result = await chat.sendMessageStream(fullQuestion);
+
+      let fullText = "";
+      aiBubble.innerHTML = "";
+
+      for await (const chunk of result.stream) {
+        const chunkText = chunk.text();
+        fullText += chunkText;
+        aiBubble.innerHTML = renderMarkdown(fullText);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      // Add AI response to history
+      chatHistory.push({ role: "model", parts: [{ text: fullText }] });
+
+      // Meta info
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.innerHTML = `
+        <span class="thinking-badge">✨ Thinking</span>
+        <span class="dot"></span>
+        <span>NotebookLM 컨텍스트 활용</span>
+        <span class="dot"></span>
+        <span>${activeSubject}</span>
+      `;
+      aiBubble.parentElement.appendChild(meta);
+
+    } catch (err) {
+      aiBubble.innerHTML = `<span style="color:#ff6b6b">❌ 오류: ${err.message}</span>`;
+    }
+
+    isGenerating = false;
+    sendBtn.disabled = false;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+</script>
+</body>
+</html>
