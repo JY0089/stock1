@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI 포트폴리오 관리자",
+  title: "JY Stock",
   description: "개인화된 주식 투자 기록 및 AI 기반 포트폴리오 시각화 서비스",
 };
 

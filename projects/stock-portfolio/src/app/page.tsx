@@ -43,7 +43,7 @@ export default function Home() {
             <Wallet className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">AI Portfolio Insights</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">JY Stock</h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm">스마트한 자산 관리와 AI 투자 상담</p>
           </div>
         </div>
@@ -53,8 +53,8 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'dashboard'
-                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
             <LineChart className="w-4 h-4" />
@@ -63,8 +63,8 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('ai')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'ai'
-                ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
             <Sparkles className="w-4 h-4" />
